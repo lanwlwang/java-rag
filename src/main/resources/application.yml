@@ -24,7 +24,7 @@ langchain4j:
   
   # DashScope (通义千问) 配置
   dashscope:
-    api-key: sk-cf6099c28d184162839884e397437f75
+    api-key:
     chat-model:
       model-name: qwen-plus         # 可选: qwen-turbo, qwen-plus, qwen-max
       temperature: 0.5

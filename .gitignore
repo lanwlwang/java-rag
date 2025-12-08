@@ -19,6 +19,7 @@ buildNumber.properties
 .settings/
 .classpath
 .project
+.md
 
 # Logs
 logs/
