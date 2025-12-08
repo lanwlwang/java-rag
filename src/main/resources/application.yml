@@ -1,0 +1,92 @@
+spring:
+  application:
+    name: java-rag
+
+  # PostgreSQL 数据库配置
+  datasource:
+    url: jdbc:postgresql://localhost:5432/rag_db
+    username: postgres
+    password: wl01253428
+    driver-class-name: org.postgresql.Driver
+
+# LangChain4j 配置
+langchain4j:
+  # OpenAI 配置
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    chat-model:
+      model-name: gpt-4o-mini
+      temperature: 0.5
+      max-tokens: 2000
+    embedding-model:
+      model-name: text-embedding-3-large
+      dimensions: 1536
+  
+  # DashScope (通义千问) 配置
+  dashscope:
+    api-key: sk-cf6099c28d184162839884e397437f75
+    chat-model:
+      model-name: qwen-plus         # 可选: qwen-turbo, qwen-plus, qwen-max
+      temperature: 0.5
+      max-tokens: 2000
+    embedding-model:
+      model-name: text-embedding-v3  # 通义千问 Embedding 模型
+      dimensions: 1024                # text-embedding-v3 输出 1024 维向量
+
+  # PGVector 配置
+  pgvector:
+    host: localhost
+    port: 5432
+    database: rag_db
+    user: postgres
+    password: wl01253428
+    table: rag_embeddings
+    dimension: 1024                  # 根据使用的 embedding 模型调整 (DashScope: 1024, OpenAI: 1536)
+    create-table: true
+    drop-table-first: false
+
+# RAG 业务配置
+rag:
+  # AI 模型提供商: openai 或 dashscope
+  provider: dashscope
+  # 文档处理配置
+  document:
+    chunk-size: 300              # 每个分块的 token 数
+    chunk-overlap: 50            # 分块重叠 token 数
+    max-chunk-size: 500          # 最大分块大小
+  
+  # 检索配置
+  retrieval:
+    top-k: 10                    # 向量检索返回的文档数
+    similarity-threshold: 0.7    # 相似度阈值
+    use-reranking: true          # 是否使用 LLM 重排
+    rerank-sample-size: 20       # 重排候选文档数
+  
+  # 问答配置
+  qa:
+    parallel-requests: 4         # 并行请求数
+    timeout-seconds: 30          # 超时时间
+  
+  # 对话记忆配置
+  chat:
+    memory:
+      max-messages: 20           # 每个会话保留的最大消息数（系统+用户+AI）
+      session-timeout: 1800000   # 会话超时时间（毫秒，默认30分钟）
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.example.rag: DEBUG
+    dev.langchain4j: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/rag-application.log
+
+# 服务器配置
+server:
+  port: 8087
+  servlet:
+    context-path: /api
