@@ -19,7 +19,6 @@ buildNumber.properties
 .settings/
 .classpath
 .project
-.md
 
 # Logs
 logs/
@@ -32,3 +31,7 @@ Thumbs.db
 # Application
 application-local.yml
 *.env
+
+# Documentation (auto-generated)
+*.md
+!README.md
