@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -26,60 +26,13 @@ import java.util.List;
 @Component
 public class FeishuWikiReader {
 
-    @Value("${feishu.tenant-access-token:}")
-    private String tenantAccessToken;
-
     private static final String FEISHU_API_BASE = "https://open.feishu.cn/open-apis";
 
     private final OkHttpClient httpClient = new OkHttpClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    /**
-     * 测试方法
-     * 
-     * 使用前需要:
-     * 1. 在 application.yml 中配置飞书 app-id 和 app-secret
-     * 2. 或者手动调用 setTenantAccessToken() 设置访问令牌
-     * 3. 将 documentId 替换为实际的飞书文档 ID
-     */
-    public static void main(String[] args) {
-        FeishuWikiReader reader = new FeishuWikiReader();
-        
-        // 手动设置访问令牌（从配置文件或环境变量获取）
-       reader.setTenantAccessToken("t-g104caeRIR6RO55SWOIK42PD6HEHWVPSPXV4JOAE");
-        
-        // 示例：读取飞书文档
-        // 文档 ID 可以从飞书文档 URL 中获取
-        // 例如: https://xxx.feishu.cn/docx/KgTSwsMzBiw1qGk7UYGcjksxnXd
-        //String documentId = "KgTSwsMzBiw1qGk7UYGcjksxnXd";
-        String documentId = "JLlUd7lIIoM0Gtx4PyJcP2VDnSc";
-
-        try {
-            System.out.println("=== 测试读取飞书文档 ===");
-            System.out.println("文档 ID: " + documentId);
-
-            JsonNode wikiContent = reader.readWikiDocument(documentId);
-            System.out.println("\n文档原始内容:");
-            System.out.println(wikiContent.toPrettyString());
-            
-            // 转换为 RAG Document
-            Document document = reader.convertToDocument(documentId, "测试文档");
-            System.out.println("\n转换后的文档:");
-            System.out.println("- 页数: " + document.getContent().getPages().size());
-            System.out.println("- 内容长度: " + document.getContent().getPages().get(0).getText().length() + " 字符");
-            System.out.println("- 前 200 字符: " + 
-                document.getContent().getPages().get(0).getText().substring(0, 
-                    Math.min(200, document.getContent().getPages().get(0).getText().length())));
-            
-        } catch (Exception e) {
-            System.err.println("\n错误: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    public void  setTenantAccessToken(String token) {
-        this.tenantAccessToken = token;
-    }
+    @Autowired
+    private FeishuTokenManager feishuTokenManager;
 
     /**
      * 读取飞书 Wiki 文档内容
@@ -156,7 +109,7 @@ public class FeishuWikiReader {
 
         Request request = new Request.Builder()
                 .url(url)
-                .addHeader("Authorization", "Bearer " + tenantAccessToken)
+                .addHeader("Authorization", "Bearer " + feishuTokenManager.getToken())
                 .addHeader("Content-Type", "application/json")
                 .build();
 
@@ -200,7 +153,7 @@ public class FeishuWikiReader {
 
         Request request = new Request.Builder()
                 .url(url)
-                .addHeader("Authorization", "Bearer " + tenantAccessToken)
+                .addHeader("Authorization", "Bearer " + feishuTokenManager.getToken())
                 .build();
 
         try (Response response = httpClient.newCall(request).execute()) {
