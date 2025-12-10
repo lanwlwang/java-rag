@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -44,6 +45,29 @@ public class RAGController {
     @GetMapping("/health")
     public ResponseEntity<String> health() {
         return ResponseEntity.ok("RAG Service is running!");
+    }
+
+    @PostMapping("/upload-pdf-by-path")
+    public ResponseEntity<UploadResponse> uploadPdfByPath(
+            @RequestParam("filePath") String filePath,
+            @RequestParam("companyName") String companyName) {
+        try {
+            log.info("收到 PDF 上传请求: {}, 公司: {}", filePath, companyName);
+            ragPipeline.processPdfToVectorStore(new File(filePath), companyName);
+            return ResponseEntity.ok(new UploadResponse(
+                    true,
+                    "PDF 处理成功",
+                    filePath
+            ));
+        }catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                .body(new UploadResponse(
+                    false,
+                    "处理失败: " + e.getMessage(),
+                    filePath
+                ));
+        }
+
     }
     
     /**

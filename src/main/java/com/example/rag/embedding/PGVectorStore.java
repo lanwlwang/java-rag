@@ -74,7 +74,7 @@ public class PGVectorStore {
             .table(table)
             .dimension(dimension)
             .createTable(true)
-            .dropTableFirst(true) //开发/测试环境可以设置为true，每次启动能获取干净的表结构；生产环境可以设置为false，避免数据丢失
+            .dropTableFirst(false) //开发/测试环境可以设置为true，每次启动能获取干净的表结构；生产环境可以设置为false，避免数据丢失
             .build();
         
         log.info("PGVector 存储初始化完成");
