@@ -2,6 +2,7 @@ package com.example.rag.retrieval;
 
 import com.example.rag.embedding.PGVectorStore;
 import com.example.rag.model.RetrievalResult;
+import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.store.embedding.EmbeddingMatch;
 import lombok.extern.slf4j.Slf4j;
@@ -70,7 +71,44 @@ public class VectorRetriever {
         TextSegment segment = match.embedded();
         
         // 提取元数据
-        int page = Integer.parseInt(segment.metadata("page"));
+        Metadata metadata = segment.metadata();
+        // 尝试从metadata中获取page值
+        String pageStr = null;
+        if (metadata != null) {
+            try {
+                // 尝试使用getString方法
+                try {
+                    java.lang.reflect.Method getStringMethod = metadata.getClass().getMethod("getString", String.class);
+                    pageStr = (String) getStringMethod.invoke(metadata, "page");
+                } catch (NoSuchMethodException e1) {
+                    // 如果getString不存在，尝试toMap
+                    try {
+                        java.lang.reflect.Method toMapMethod = metadata.getClass().getMethod("toMap");
+                        java.util.Map<?, ?> map = (java.util.Map<?, ?>) toMapMethod.invoke(metadata);
+                        if (map != null) {
+                            Object pageObj = map.get("page");
+                            pageStr = pageObj != null ? pageObj.toString() : null;
+                        }
+                    } catch (NoSuchMethodException e2) {
+                        // 如果toMap也不存在，尝试直接作为Map
+                        if (metadata instanceof java.util.Map) {
+                            Object pageObj = ((java.util.Map<?, ?>) metadata).get("page");
+                            pageStr = pageObj != null ? pageObj.toString() : null;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.debug("无法从metadata中获取page值", e);
+            }
+        }
+        int page = 0;
+        if (pageStr != null && !pageStr.trim().isEmpty()) {
+            try {
+                page = Integer.parseInt(pageStr);
+            } catch (NumberFormatException e) {
+                log.warn("无法解析page值: {}, 使用默认值0", pageStr);
+            }
+        }
         String text = segment.text();
         double score = match.score();
         

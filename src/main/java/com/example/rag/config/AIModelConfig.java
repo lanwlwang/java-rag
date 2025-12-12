@@ -2,7 +2,7 @@ package com.example.rag.config;
 
 import com.example.rag.ai.DashScopeChatModel;
 import com.example.rag.ai.DashScopeEmbeddingModel;
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
@@ -58,7 +58,7 @@ public class AIModelConfig {
      * 根据配置创建 ChatLanguageModel
      */
     @Bean
-    public ChatLanguageModel chatLanguageModel() {
+    public ChatModel chatLanguageModel() {
         log.info("初始化 ChatLanguageModel, 提供商: {}", provider);
         
         if ("dashscope".equalsIgnoreCase(provider)) {
@@ -85,7 +85,7 @@ public class AIModelConfig {
     /**
      * 创建 OpenAI ChatModel
      */
-    private ChatLanguageModel createOpenAiChatModel() {
+    private ChatModel createOpenAiChatModel() {
         if (openaiApiKey == null || openaiApiKey.isEmpty()) {
             throw new IllegalStateException("OPENAI_API_KEY 未配置");
         }
@@ -120,7 +120,7 @@ public class AIModelConfig {
     /**
      * 创建 DashScope ChatModel
      */
-    private ChatLanguageModel createDashScopeChatModel() {
+    private ChatModel createDashScopeChatModel() {
         if (dashscopeApiKey == null || dashscopeApiKey.isEmpty()) {
             throw new IllegalStateException("DASHSCOPE_API_KEY 未配置");
         }

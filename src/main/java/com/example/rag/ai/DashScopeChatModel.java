@@ -10,7 +10,9 @@ import com.alibaba.dashscope.exception.InputRequiredException;
 import com.alibaba.dashscope.exception.NoApiKeyException;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.output.Response;
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,7 +24,7 @@ import java.util.List;
  * 实现 LangChain4j 的 ChatLanguageModel 接口
  */
 @Slf4j
-public class DashScopeChatModel implements ChatLanguageModel {
+public class DashScopeChatModel implements ChatModel {
     
     private final String apiKey;
     private final String modelName;
@@ -38,7 +40,6 @@ public class DashScopeChatModel implements ChatLanguageModel {
         log.info("DashScope ChatModel 初始化完成, 模型: {}", modelName);
     }
     
-    @Override
     public Response<AiMessage> generate(List<ChatMessage> messages) {
         try {
             // 转换 LangChain4j 消息格式为 DashScope 格式
@@ -98,14 +99,32 @@ public class DashScopeChatModel implements ChatLanguageModel {
                 default -> Role.USER;
             };
             
+            // 根据消息类型提取文本内容
+            String content = extractTextFromMessage(msg);
+            
             dashscopeMessages.add(
                 Message.builder()
                     .role(role.getValue())
-                    .content(msg.text())
+                    .content(content)
                     .build()
             );
         }
         
         return dashscopeMessages;
+    }
+    
+    /**
+     * 从 ChatMessage 中提取文本内容
+     */
+    private String extractTextFromMessage(ChatMessage message) {
+        if (message instanceof UserMessage userMsg) {
+            return userMsg.singleText();
+        } else if (message instanceof AiMessage aiMsg) {
+            return aiMsg.text();
+        } else if (message instanceof SystemMessage systemMsg) {
+            return systemMsg.text();
+        } else {
+            return "";
+        }
     }
 }

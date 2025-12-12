@@ -30,9 +30,9 @@ public class RAGBuildController {
             System.out.println("=== 测试读取飞书文档 ===");
             System.out.println("文档 ID: " + documentId);
 
-            JsonNode wikiContent = feishuWikiReader.readWikiDocument(documentId);
+            com.alibaba.fastjson2.JSONObject wikiContent = feishuWikiReader.readWikiDocument(documentId);
             System.out.println("\n文档原始内容:");
-            System.out.println(wikiContent.toPrettyString());
+            System.out.println(wikiContent.toJSONString());
 
             // 转换为 RAG Document
             Document document = feishuWikiReader.convertToDocument(documentId, "测试文档");

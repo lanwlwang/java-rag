@@ -6,14 +6,19 @@ import com.example.rag.model.Question;
 import com.example.rag.model.RetrievalResult;
 import com.example.rag.retrieval.VectorRetriever;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.output.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -43,7 +48,7 @@ public class QuestionProcessor {
     private PromptBuilder promptBuilder;
     
     @Autowired
-    private ChatLanguageModel chatModel;
+    private ChatModel chatModel;
     
     @Autowired(required = false)
     private ChatMemoryService chatMemoryService;
@@ -99,7 +104,7 @@ public class QuestionProcessor {
                 llmResponse = generateWithHistory(systemPrompt, userPrompt, sessionId);
             } else {
                 // 不使用对话历史
-                llmResponse = chatModel.generate(systemPrompt + "\n\n" + userPrompt);
+                llmResponse = chatModel.chat(systemPrompt + "\n\n" + userPrompt);
             }
             
             log.info("LLM 原始响应: {}", llmResponse);
@@ -172,14 +177,45 @@ public class QuestionProcessor {
         
         for (ChatMessage message : history) {
             String role = message.type().toString();
-            String content = message.text();
+            String content = extractTextFromMessage(message);
             fullContext.append(role).append(": ").append(content).append("\n\n");
         }
         
         log.debug("对话历史长度: {} 条消息", history.size());
         
-        // 调用 LLM
-        return chatModel.generate(fullContext.toString());
+        // 调用 LLM（直接使用历史消息列表）
+        Response<AiMessage> response = generateFromMessages(history);
+        return response.content().text();
+    }
+    
+    /**
+     * 从消息列表生成回复（辅助方法）
+     */
+    private Response<AiMessage> generateFromMessages(List<ChatMessage> messages) {
+        // 尝试调用 generate 方法（如果 ChatModel 支持）
+        if (chatModel instanceof com.example.rag.ai.DashScopeChatModel dashScopeModel) {
+            return dashScopeModel.generate(messages);
+        } else {
+            // 对于其他 ChatModel 实现，需要适配
+            // 这里假设 ChatModel 有 generate(List<ChatMessage>) 方法
+            // 如果没有，可能需要使用反射或其他方式
+            throw new UnsupportedOperationException("不支持的 ChatModel 类型: " + chatModel.getClass().getName());
+        }
+    }
+    
+    /**
+     * 从 ChatMessage 中提取文本内容
+     */
+    private String extractTextFromMessage(ChatMessage message) {
+        if (message instanceof UserMessage userMsg) {
+            return userMsg.singleText();
+        } else if (message instanceof AiMessage aiMsg) {
+            return aiMsg.text();
+        } else if (message instanceof SystemMessage systemMsg) {
+            return systemMsg.text();
+        } else {
+            return "";
+        }
     }
     
     /**
